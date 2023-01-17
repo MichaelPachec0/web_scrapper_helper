@@ -1,0 +1,15 @@
+[package]
+name = "web_scrapper_helper"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+cookie = { version = "0.16.2", features = ["percent-encode"] }
+liberr = { version = "0.1.0", path="../liberr" }
+conversions-rust-lib = {version = "0.1.0", path="../conversions-rust-lib"}
+serde = { version = "1.0.152", features = ["derive"] }
+time = "0.3.17"
+url = "2.3.1"
+serde_json = "1.0.91"
