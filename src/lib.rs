@@ -147,8 +147,9 @@ pub mod scrapper_cookie {
 
     #[inline]
     pub fn export_cookie(path: &str, vec: &[CookieStruct]) -> Result<(), liberr::Err> {
-        let file = File::create(path).err_to_lib_err(line!())?;
-        let mut buf = BufWriter::new(file);
+        let mut buf = File::create(path)
+            .map(BufWriter::new)
+            .err_to_lib_err(line!())?;
         let vec = vec
             .iter()
             .map(serde_json::to_string_pretty)
