@@ -308,3 +308,61 @@ pub mod scrapper_cookie {
         }
     }
 }
+
+pub mod headers {
+    use conversions_rust_lib::ErrToLibErr;
+    use core::str::FromStr;
+    use std::fs::File;
+    use std::io;
+    use std::io::{BufRead, BufReader};
+    use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
+
+    pub trait HeadersProvider {
+        fn from_str_iter(values: impl Iterator<Item = (String, String)>) -> Result<Self, liberr::Err>
+            where
+                Self: Sized;
+    }
+    impl HeadersProvider for HeaderMap {
+        fn from_str_iter(values: impl Iterator<Item = (String, String)>) -> Result<Self, liberr::Err>
+            where
+                Self: Sized,
+        {
+            let mut ret = HeaderMap::new();
+            for (key, val) in values {
+                let key = HeaderName::from_str(key.as_str()).err_to_lib_err(line!())?;
+                let val = HeaderValue::from_str(val.as_str()).err_to_lib_err(line!())?;
+                ret.insert(key, val);
+            }
+            Ok(ret)
+        }
+    }
+    pub fn get_headers(path: &str) -> io::Result<impl Iterator<Item = Result<(String,String), io::Error>>> {
+        let iter = File::open(path).map(BufReader::new)?.lines().map(|line| {
+            line.map(|line| {
+                let mut line = line.split(": ").map(String::from);
+                (line.next().unwrap(), line.next().unwrap())
+            })
+        });
+        Ok(iter)
+    }
+
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        #[test]
+        fn test_get_headers() -> Result<(), Box<dyn std::error::Error>> {
+            let headers = get_headers("./data/headers.txt")?;
+            Ok(())
+        }
+        #[test]
+        fn test_Headers_provider() -> Result<(), Box<dyn std::error::Error>> {
+            let map = HeaderMap::from_str_iter((get_headers("./data/headers.txt")?).flatten())?;
+            for values in map {
+                println!("{values:?}");
+            }
+            Ok(())
+
+        }
+    }
+}
