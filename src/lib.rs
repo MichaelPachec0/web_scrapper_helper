@@ -106,9 +106,9 @@ pub mod scrapper_cookie {
                 .secure(raw.secure)
                 .http_only(raw.httpOnly)
                 .expires(time)
-                .same_site(match raw.sameSite.as_str() {
-                    "Strict" => SameSite::Strict,
-                    "Lax" => SameSite::Lax,
+                .same_site(match raw.sameSite.as_deref() {
+                    Some("Strict") => SameSite::Strict,
+                    Some("Lax") => SameSite::Lax,
                     _ => SameSite::None,
                 })
                 .finish(),
@@ -133,7 +133,7 @@ pub mod scrapper_cookie {
                 },
                 None => -1,
             },
-            sameSite: match cookie.same_site() {
+            sameSite: Some(match cookie.same_site() {
                 Some(site) => match site {
                     SameSite::Strict => "Strict",
                     SameSite::Lax => "Lax",
@@ -141,7 +141,7 @@ pub mod scrapper_cookie {
                 },
                 None => "None",
             }
-            .to_owned(),
+            .to_owned()),
         }
     }
 

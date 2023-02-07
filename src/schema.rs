@@ -30,5 +30,5 @@ pub struct CookieStruct {
     pub httpOnly: bool,
     pub secure: bool,
     pub expires: i64,
-    pub sameSite: String,
+    pub sameSite: Option<String>,
 }
