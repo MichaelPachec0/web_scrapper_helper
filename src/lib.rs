@@ -294,5 +294,17 @@ pub mod scrapper_cookie {
             );
             Ok(())
         }
+        /// Checks that cookies can be parsed from a properly formatted(?) json file.
+        #[test]
+        fn from_file() -> Result<(), Box<dyn std::error::Error>> {
+            // let file = File::open("data/cookie_1_28_2023.json")?;
+            // let rbuf = BufReader::new(file);
+            let string = std::fs::read_to_string("data/cookie_1_28_2023.json")?;
+            let cookies = build_cookie(string.as_str())?;
+            for cookie in cookies {
+                println!("{cookie:?}");
+            }
+            Ok(())
+        }
     }
 }
