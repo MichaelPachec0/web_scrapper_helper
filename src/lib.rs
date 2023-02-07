@@ -182,7 +182,7 @@ pub mod scrapper_cookie {
   "path": "/",
   "httpOnly": false,
   "secure": true,
-  "expires": 1705027330,
+  "expires": -1,
   "sameSite": "Lax"
 },{
   "name": "LEETCODE_SESSION",
@@ -205,7 +205,8 @@ pub mod scrapper_cookie {
                         -1 => true,
                         time => match OffsetDateTime::from_unix_timestamp(time) {
                             Ok(datetime) => {
-                                datetime + Duration::hours(1) < OffsetDateTime::now_utc()
+                                // this is true when expiration time is 1 hour from now.
+                                datetime + Duration::hours(1) > OffsetDateTime::now_utc()
                             }
                             // For now ignore if we cannot parse the timestamp.
                             _ => true,
