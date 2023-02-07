@@ -159,13 +159,17 @@ pub mod scrapper_cookie {
         write!(&mut buf, "{write_string}").err_to_lib_err(line!())?;
         Ok(())
     }
+
     #[cfg(test)]
+    #[allow(clippy::use_debug)]
     mod tests {
         use super::*;
         use conversions_rust_lib::ErrToLibErr;
-        use std::ops::Add;
 
-        const RAW_INPUT: &str = r#"[
+        /// Checks that we can parse valid(?) json.
+        #[test]
+        fn test_cookie_parse() -> Result<(), Box<dyn std::error::Error>> {
+            let raw_input: &str = r#"[
 {
   "name": "messages",
   "value": "\"d5cbb8cbda62bbe615e0e5a023cc37f970fea1s7$[[\\\"__json_message\\\"\\0540\\05425\\054\\\"Successfully signed in as hello_from_jupiter.\\\"]]\"",
@@ -191,13 +195,11 @@ pub mod scrapper_cookie {
   "path": "/",
   "httpOnly": true,
   "secure": true,
-  "expires": 1674787330,
+  "expires": -1,
   "sameSite": "Lax"
 }
 ]"#;
-        #[test]
-        fn test_cookie_parse() -> Result<(), Box<dyn std::error::Error>> {
-            let actual_struct = serde_json::from_str::<Vec<CookieStruct>>(RAW_INPUT)?;
+            let actual_struct = serde_json::from_str::<Vec<CookieStruct>>(raw_input)?;
             let actual = actual_struct
                 .iter()
                 .filter(|raw| {
@@ -206,7 +208,7 @@ pub mod scrapper_cookie {
                         time => match OffsetDateTime::from_unix_timestamp(time) {
                             Ok(datetime) => {
                                 // this is true when expiration time is 1 hour from now.
-                                datetime + Duration::hours(1) > OffsetDateTime::now_utc()
+                                datetime > OffsetDateTime::now_utc() + Duration::hours(1)
                             }
                             // For now ignore if we cannot parse the timestamp.
                             _ => true,
@@ -214,7 +216,7 @@ pub mod scrapper_cookie {
                     }
                 })
                 .count();
-            let vec_cookie = build_cookie(RAW_INPUT, true)?;
+            let vec_cookie = build_cookie(raw_input)?;
             assert_eq!(
                 vec_cookie.len(),
                 actual,
@@ -233,8 +235,7 @@ pub mod scrapper_cookie {
             let result = String::from("[\n")
                 .add(raw_result.join(",").as_str())
                 .add("\n]");
-            println!("{result}");
-            // assert_eq!(result, RAW_INPUT);
+            assert_eq!(result, raw_input);
             Ok(())
         }
         #[test]
@@ -252,7 +253,7 @@ pub mod scrapper_cookie {
             },
             {
                 "name": "_dd_s",
-                "value": "rum=1&id=0035d843-4b8a-42d0-a686-b752aa462d23&created=1673484346515&expire=1673485276464",
+                "value": "rum=1&id=0035d843-4b8a-42d0-a686-b752aa462d24&created=1673484346515&expire=1673485276464",
                 "domain": "leetcode.com",
                 "path": "/",
                 "expires": 1673485276,
