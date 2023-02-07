@@ -238,6 +238,8 @@ pub mod scrapper_cookie {
             assert_eq!(result, raw_input);
             Ok(())
         }
+
+        /// Checks that the functions properly check expiration.
         #[test]
         fn cookie_expiration_filter() -> Result<(), liberr::Err> {
             let raw_input = r#"[
@@ -283,7 +285,7 @@ pub mod scrapper_cookie {
             }
         ]"#;
             let expected = 3;
-            let vec_cookie = build_cookie(raw_input, true).err_to_lib_err(line!())?;
+            let vec_cookie = build_cookie(raw_input).err_to_lib_err(line!())?;
             let actual = vec_cookie.len();
             assert_eq!(
                 actual, expected,
