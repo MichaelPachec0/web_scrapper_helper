@@ -309,6 +309,94 @@ pub mod scrapper_cookie {
     }
 }
 
+pub mod scrapper_cookie_store {
+    use crate::scrapper_cookie;
+    use reqwest_cookie_store::{CookieStore as RCS_CookieStore, CookieStoreMutex};
+    use std::fs::File;
+    use std::io::{BufReader, Read};
+    use std::sync::Arc;
+
+    /// Enum used to handle multiple json scenarios.
+    ///
+    /// `InitialCookies::CookieStoreJson` : formatted the way `cookie_store` already can parse. Wraps
+    ///     around `CookieStore::load_json`.
+    ///
+    ///
+    /// `InitialCookies::RawArrayJson` : simple format where the json file consists of a top-level
+    ///     array of objects. Uses a built-in parser to insert valid cookies into the store.
+    ///
+    ///
+    /// `InitialCookies::None` : Simply Initializes a new `CookieStore`.
+    pub enum InitialCookies {
+        CookieStoreJson(BufReader<File>),
+        RawArrayJson(BufReader<File>),
+        None,
+    }
+    /// This function initializes a cookie store
+    ///
+    /// Using the data inside the parameter data, creates a `CookieStore` wraps around a Mutex, and
+    /// wraps that around a `Arc`.
+    pub fn init_cookie_store(data: InitialCookies) -> Arc<CookieStoreMutex> {
+        let cookie_store = match data {
+            InitialCookies::CookieStoreJson(json_file) => RCS_CookieStore::load_json(json_file)
+                .unwrap_or_else(|e| {
+                    println!("ERROR: {e}, defaulting to empty cookie_store");
+                    reqwest_cookie_store::CookieStore::default()
+                }),
+            InitialCookies::RawArrayJson(mut json_file) => {
+                let mut store = RCS_CookieStore::default();
+                let mut raw_data = String::new();
+                // Ignore the read to str
+                let _size = json_file.read_to_string(&mut raw_data);
+                let cookies = scrapper_cookie::build_cookies_url(&raw_data);
+                for (cookie, url) in cookies {
+                    let _cookie_result = store.insert_raw(&cookie, &url);
+                }
+                store
+            }
+            InitialCookies::None => RCS_CookieStore::default(),
+        };
+        let cookie_store = CookieStoreMutex::new(cookie_store);
+        Arc::new(cookie_store)
+    }
+    #[cfg(test)]
+    mod tests {
+        use crate::scrapper_cookie_store::{init_cookie_store, InitialCookies};
+        use conversions_rust_lib::ErrToLibErr;
+        use reqwest_cookie_store::CookieStoreMutex;
+        use std::fs::File;
+        use std::io::BufReader;
+        use std::sync::Arc;
+
+        fn count_cookies(cookie_store: Arc<CookieStoreMutex>) -> Result<i32, liberr::Err> {
+            let mut counter = 0;
+            let store = cookie_store.lock().err_to_lib_err(line!())?;
+            for cookie in store.iter_any() {
+                counter += 1;
+                println!("{cookie:?}");
+            }
+            Ok(counter)
+        }
+
+        #[test]
+        fn it_works() -> Result<(), Box<dyn std::error::Error>> {
+            let raw_array_json = File::open("./data/cookie_1_28_2023.json").map(BufReader::new)?;
+            let cookie_type = InitialCookies::RawArrayJson(raw_array_json);
+            let cookie_store = init_cookie_store(cookie_type);
+            let counter = count_cookies(Arc::clone(&cookie_store))?;
+            assert_ne!(counter, 0);
+            let cookie_store = File::open("./data/cookie_store.json")
+                .map(BufReader::new)
+                .map(InitialCookies::CookieStoreJson)?;
+            let cookie_store = init_cookie_store(cookie_store);
+            let counter = count_cookies(Arc::clone(&cookie_store))?;
+            assert_ne!(counter, 0);
+            Ok(())
+        }
+    }
+}
+
+
 pub mod headers {
     use conversions_rust_lib::ErrToLibErr;
     use core::str::FromStr;
