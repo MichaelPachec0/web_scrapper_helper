@@ -396,24 +396,27 @@ pub mod scrapper_cookie_store {
     }
 }
 
-
 pub mod headers {
     use conversions_rust_lib::ErrToLibErr;
     use core::str::FromStr;
+    use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
     use std::fs::File;
     use std::io;
     use std::io::{BufRead, BufReader};
-    use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
-    pub trait HeadersProvider {
-        fn from_str_iter(values: impl Iterator<Item = (String, String)>) -> Result<Self, liberr::Err>
-            where
-                Self: Sized;
+    pub trait IterStr {
+        fn from_str_iter(
+            values: impl Iterator<Item = (String, String)>,
+        ) -> Result<Self, liberr::Err>
+        where
+            Self: Sized;
     }
-    impl HeadersProvider for HeaderMap {
-        fn from_str_iter(values: impl Iterator<Item = (String, String)>) -> Result<Self, liberr::Err>
-            where
-                Self: Sized,
+    impl IterStr for HeaderMap {
+        fn from_str_iter(
+            values: impl Iterator<Item = (String, String)>,
+        ) -> Result<Self, liberr::Err>
+        where
+            Self: Sized,
         {
             let mut ret = HeaderMap::new();
             for (key, val) in values {
@@ -424,7 +427,9 @@ pub mod headers {
             Ok(ret)
         }
     }
-    pub fn get_headers(path: &str) -> io::Result<impl Iterator<Item = Result<(String,String), io::Error>>> {
+    pub fn get_headers(
+        path: &str,
+    ) -> io::Result<impl Iterator<Item = Result<(String, String), io::Error>>> {
         let iter = File::open(path).map(BufReader::new)?.lines().map(|line| {
             line.map(|line| {
                 let mut line = line.split(": ").map(String::from);
@@ -434,23 +439,24 @@ pub mod headers {
         Ok(iter)
     }
 
-
     #[cfg(test)]
     mod tests {
         use super::*;
         #[test]
         fn test_get_headers() -> Result<(), Box<dyn std::error::Error>> {
-            let headers = get_headers("./data/headers.txt")?;
+            let _headers = get_headers("./data/headers.txt")?;
             Ok(())
         }
         #[test]
-        fn test_Headers_provider() -> Result<(), Box<dyn std::error::Error>> {
+        fn test_headers_provider() -> Result<(), Box<dyn std::error::Error>> {
             let map = HeaderMap::from_str_iter((get_headers("./data/headers.txt")?).flatten())?;
-            for values in map {
-                println!("{values:?}");
+            for (key, value) in map {
+                assert!(key.is_some());
+                if let Some(key) = key {
+                    println!("KEY: {key:?} VAL: {value:?}");
+                }
             }
             Ok(())
-
         }
     }
 }
