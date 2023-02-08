@@ -29,7 +29,7 @@ pub mod scrapper_cookie {
     pub use cookie::Cookie as RawCookie;
     use cookie::SameSite;
     use std::fs::File;
-    use std::io::{BufReader, BufWriter, Write};
+    use std::io::{BufWriter, Write};
     use std::ops::Add;
     use time::{Duration, OffsetDateTime};
     use url::Url;
@@ -133,15 +133,17 @@ pub mod scrapper_cookie {
                 },
                 None => -1,
             },
-            sameSite: Some(match cookie.same_site() {
-                Some(site) => match site {
-                    SameSite::Strict => "Strict",
-                    SameSite::Lax => "Lax",
-                    SameSite::None => "None",
-                },
-                None => "None",
-            }
-            .to_owned()),
+            sameSite: Some(
+                match cookie.same_site() {
+                    Some(site) => match site {
+                        SameSite::Strict => "Strict",
+                        SameSite::Lax => "Lax",
+                        SameSite::None => "None",
+                    },
+                    None => "None",
+                }
+                .to_owned(),
+            ),
         }
     }
 
